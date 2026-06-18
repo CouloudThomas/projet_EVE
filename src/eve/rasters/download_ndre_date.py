@@ -1,0 +1,60 @@
+from __future__ import annotations
+
+import argparse
+
+from raster_common import download_index_for_date
+
+
+EVALSCRIPT = """
+//VERSION=3
+
+function setup() {
+    return {
+        input: ["B05", "B8A", "SCL", "dataMask"],
+        output: {
+            bands: 1,
+            sampleType: "FLOAT32"
+        }
+    };
+}
+
+function evaluatePixel(sample) {
+    const invalidClasses = [0, 1, 3, 8, 9, 10, 11];
+
+    if (
+        sample.dataMask === 0 ||
+        invalidClasses.includes(sample.SCL)
+    ) {
+        return [-9999];
+    }
+
+    const denominator = sample.B8A + sample.B05;
+
+    if (denominator === 0) {
+        return [-9999];
+    }
+
+    return [(sample.B8A - sample.B05) / denominator];
+}
+"""
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Télécharge un GeoTIFF NDRE pour une date précise."
+    )
+    parser.add_argument("--site", default="site_001")
+    parser.add_argument("--date", required=True)
+    args = parser.parse_args()
+
+    download_index_for_date(
+        site_id=args.site,
+        acquisition_date=args.date,
+        index_name="NDRE",
+        resolution_m=20,
+        evalscript=EVALSCRIPT,
+    )
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,60 @@
+from __future__ import annotations
+
+import argparse
+
+from raster_common import download_index_for_date
+
+
+EVALSCRIPT = """
+//VERSION=3
+
+function setup() {
+    return {
+        input: ["B04", "B08", "SCL", "dataMask"],
+        output: {
+            bands: 1,
+            sampleType: "FLOAT32"
+        }
+    };
+}
+
+function evaluatePixel(sample) {
+    const invalidClasses = [0, 1, 3, 8, 9, 10, 11];
+
+    if (
+        sample.dataMask === 0 ||
+        invalidClasses.includes(sample.SCL)
+    ) {
+        return [-9999];
+    }
+
+    const denominator = sample.B08 + sample.B04;
+
+    if (denominator === 0) {
+        return [-9999];
+    }
+
+    return [(sample.B08 - sample.B04) / denominator];
+}
+"""
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Télécharge un GeoTIFF NDVI pour une date précise."
+    )
+    parser.add_argument("--site", default="site_001")
+    parser.add_argument("--date", required=True)
+    args = parser.parse_args()
+
+    download_index_for_date(
+        site_id=args.site,
+        acquisition_date=args.date,
+        index_name="NDVI",
+        resolution_m=10,
+        evalscript=EVALSCRIPT,
+    )
+
+
+if __name__ == "__main__":
+    main()
