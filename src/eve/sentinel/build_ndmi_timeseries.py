@@ -27,7 +27,7 @@ START_DATE = "2025-01-01"
 END_DATE = date.today().isoformat()
 
 # Résolution Sentinel-2 en mètres.
-RESOLUTION_METERS = 10
+RESOLUTION_METERS = 20
 
 # Seuil minimal de pixels valides pour considérer une date exploitable.
 # C'est un seuil pratique pour la V0, pas une vérité agronomique.
@@ -55,7 +55,7 @@ STATISTICS_URL = (
     "statistics/v1"
 )
 
-# build_ndvi_timeseries.py -> sentinel -> eve -> src -> EVE
+# build_ndmi_timeseries.py -> sentinel -> eve -> src -> EVE
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 ENV_FILE = PROJECT_ROOT / ".env"
@@ -83,7 +83,7 @@ load_dotenv(ENV_FILE)
 
 
 # ==============================================================
-# EVALSCRIPT NDVI
+# EVALSCRIPT NDMI
 # ==============================================================
 
 EVALSCRIPT = """
@@ -93,15 +93,15 @@ function setup() {
     return {
         input: [{
             bands: [
-                "B04",
                 "B08",
+                "B11",
                 "SCL",
                 "dataMask"
             ]
         }],
         output: [
             {
-                id: "ndvi",
+                id: "ndmi",
                 bands: 1,
                 sampleType: "FLOAT32"
             },
@@ -114,30 +114,22 @@ function setup() {
 }
 
 function evaluatePixel(sample) {
-    // Classes SCL invalidées :
-    // 0  = absence de données
-    // 1  = pixel saturé ou défectueux
-    // 3  = ombre de nuage
-    // 8  = nuage probabilité moyenne
-    // 9  = nuage probabilité élevée
-    // 10 = cirrus
-    // 11 = neige ou glace
-
     const invalidClasses = [0, 1, 3, 8, 9, 10, 11];
-
-    const denominator = sample.B08 + sample.B04;
+    const denominator = sample.B08 + sample.B11;
 
     const validPixel =
-        sample.dataMask === 1 &&
-        denominator !== 0 &&
-        !invalidClasses.includes(sample.SCL);
+        sample.dataMask === 1
+        && denominator !== 0
+        && !invalidClasses.includes(sample.SCL);
 
-    const ndvi = validPixel
-        ? (sample.B08 - sample.B04) / denominator
+    const ndmi = validPixel
+        ? (
+            sample.B08 - sample.B11
+        ) / denominator
         : 0;
 
     return {
-        ndvi: [ndvi],
+        ndmi: [ndmi],
         dataMask: [validPixel ? 1 : 0]
     };
 }
@@ -458,7 +450,7 @@ def build_catalog_dataframe(
 
 
 # ==============================================================
-# STATISTICAL API : STATISTIQUES NDVI JOURNALIÈRES
+# STATISTICAL API : STATISTIQUES NDMI JOURNALIÈRES
 # ==============================================================
 
 def project_geometry_to_local_utm(
@@ -504,14 +496,14 @@ def project_geometry_to_local_utm(
         epsg_code,
     )
 
-def request_ndvi_statistics(
+def request_ndmi_statistics(
     token: str,
     geometry: dict[str, Any],
     geometry_crs_url: str,
     start_date: date,
     end_date: date,
 ) -> dict[str, Any]:
-    """Récupère les statistiques NDVI journalières."""
+    """Récupère les statistiques NDMI journalières."""
 
     end_exclusive = end_date + timedelta(days=1)
 
@@ -550,7 +542,7 @@ def request_ndvi_statistics(
             "resy": RESOLUTION_METERS,
         },
         "calculations": {
-            "ndvi": {
+            "ndmi": {
                 "statistics": {
                     "default": {
                         "percentiles": {
@@ -624,7 +616,7 @@ def get_bin_count(
     expected_low: float,
     expected_high: float,
 ) -> int:
-    """Récupère le nombre de pixels d'une classe NDVI."""
+    """Récupère le nombre de pixels d'une classe NDMI."""
 
     tolerance = 1e-6
 
@@ -671,7 +663,7 @@ def parse_statistics(
         band_data = (
             interval_data
             .get("outputs", {})
-            .get("ndvi", {})
+            .get("ndmi", {})
             .get("bands", {})
             .get("B0", {})
         )
@@ -725,32 +717,32 @@ def parse_statistics(
         bins = histogram.get("bins", [])
 
         threshold_counts = {
-            "ratio_ndvi_below_0": get_bin_count(
+            "ratio_ndmi_below_0": get_bin_count(
                 bins,
                 -1.0,
                 0.0,
             ),
-            "ratio_ndvi_0_0_2": get_bin_count(
+            "ratio_ndmi_0_0_2": get_bin_count(
                 bins,
                 0.0,
                 0.2,
             ),
-            "ratio_ndvi_0_2_0_4": get_bin_count(
+            "ratio_ndmi_0_2_0_4": get_bin_count(
                 bins,
                 0.2,
                 0.4,
             ),
-            "ratio_ndvi_0_4_0_6": get_bin_count(
+            "ratio_ndmi_0_4_0_6": get_bin_count(
                 bins,
                 0.4,
                 0.6,
             ),
-            "ratio_ndvi_0_6_0_8": get_bin_count(
+            "ratio_ndmi_0_6_0_8": get_bin_count(
                 bins,
                 0.6,
                 0.8,
             ),
-            "ratio_ndvi_above_0_8": get_bin_count(
+            "ratio_ndmi_above_0_8": get_bin_count(
                 bins,
                 0.8,
                 1.0,
@@ -787,28 +779,28 @@ def parse_statistics(
                 "valid_pixel_count": valid_pixel_count,
                 "valid_pixel_ratio": valid_pixel_ratio,
 
-                "ndvi_min": statistics.get("min"),
-                "ndvi_max": statistics.get("max"),
-                "ndvi_mean": statistics.get("mean"),
-                "ndvi_std": statistics.get("stDev"),
+                "ndmi_min": statistics.get("min"),
+                "ndmi_max": statistics.get("max"),
+                "ndmi_mean": statistics.get("mean"),
+                "ndmi_std": statistics.get("stDev"),
 
-                "ndvi_p10": get_percentile(
+                "ndmi_p10": get_percentile(
                     percentiles,
                     10,
                 ),
-                "ndvi_p25": get_percentile(
+                "ndmi_p25": get_percentile(
                     percentiles,
                     25,
                 ),
-                "ndvi_median": get_percentile(
+                "ndmi_median": get_percentile(
                     percentiles,
                     50,
                 ),
-                "ndvi_p75": get_percentile(
+                "ndmi_p75": get_percentile(
                     percentiles,
                     75,
                 ),
-                "ndvi_p90": get_percentile(
+                "ndmi_p90": get_percentile(
                     percentiles,
                     90,
                 ),
@@ -845,21 +837,21 @@ def add_trend_columns(
         errors="coerce",
     )
 
-    dataframe["ndvi_mean"] = pd.to_numeric(
-        dataframe.get("ndvi_mean"),
+    dataframe["ndmi_mean"] = pd.to_numeric(
+        dataframe.get("ndmi_mean"),
         errors="coerce",
     )
 
     dataframe["is_usable"] = (
         dataframe["valid_pixel_ratio"]
         >= MIN_VALID_PIXEL_RATIO
-    ) & dataframe["ndvi_mean"].notna()
+    ) & dataframe["ndmi_mean"].notna()
 
     dataframe[
-        "ndvi_change_from_previous_usable"
+        "ndmi_change_from_previous_usable"
     ] = pd.NA
 
-    dataframe["ndvi_rolling_mean_3"] = pd.NA
+    dataframe["ndmi_rolling_mean_3"] = pd.NA
 
     usable_indexes = dataframe.index[
         dataframe["is_usable"]
@@ -867,17 +859,17 @@ def add_trend_columns(
 
     usable_values = dataframe.loc[
         usable_indexes,
-        "ndvi_mean",
+        "ndmi_mean",
     ]
 
     dataframe.loc[
         usable_indexes,
-        "ndvi_change_from_previous_usable",
+        "ndmi_change_from_previous_usable",
     ] = usable_values.diff().values
 
     dataframe.loc[
         usable_indexes,
-        "ndvi_rolling_mean_3",
+        "ndmi_rolling_mean_3",
     ] = (
         usable_values
         .rolling(
@@ -900,11 +892,11 @@ def create_plot(
     parcel_name: str,
     output_file: Path,
 ) -> None:
-    """Crée une courbe temporelle du NDVI."""
+    """Crée une courbe temporelle du NDMI."""
 
     plot_data = dataframe[
         dataframe["is_usable"]
-        & dataframe["ndvi_mean"].notna()
+        & dataframe["ndmi_mean"].notna()
     ].copy()
 
     if plot_data.empty:
@@ -920,33 +912,33 @@ def create_plot(
 
     axis.plot(
         plot_data["acquisition_date"],
-        plot_data["ndvi_mean"],
+        plot_data["ndmi_mean"],
         marker="o",
-        label="NDVI moyen",
+        label="NDMI moyen",
     )
 
     axis.plot(
         plot_data["acquisition_date"],
-        plot_data["ndvi_median"],
+        plot_data["ndmi_median"],
         marker=".",
-        label="NDVI médian",
+        label="NDMI médian",
     )
 
     axis.plot(
         plot_data["acquisition_date"],
         pd.to_numeric(
-            plot_data["ndvi_rolling_mean_3"],
+            plot_data["ndmi_rolling_mean_3"],
             errors="coerce",
         ),
         label="Moyenne mobile sur 3 acquisitions",
     )
 
     axis.set_title(
-        f"Évolution du NDVI — {parcel_name}"
+        f"Évolution du NDMI — {parcel_name}"
     )
 
     axis.set_xlabel("Date d'acquisition")
-    axis.set_ylabel("NDVI")
+    axis.set_ylabel("NDMI")
     axis.set_ylim(-1, 1)
     axis.grid(True)
     axis.legend()
@@ -1022,9 +1014,9 @@ def main() -> None:
         f"{len(catalog_features)}"
     )
 
-    print("Calcul des statistiques NDVI...")
+    print("Calcul des statistiques NDMI...")
 
-    statistics_response = request_ndvi_statistics(
+    statistics_response = request_ndmi_statistics(
         token=token,
         geometry=statistics_geometry,
         geometry_crs_url=statistics_crs_url,
@@ -1078,7 +1070,7 @@ def main() -> None:
 
     csv_file = (
         PROCESSED_DIR
-        / f"ndvi_timeseries_{SELECTED_SITE_ID}.csv"
+        / f"ndmi_timeseries_{SELECTED_SITE_ID}.csv"
     )
 
     catalog_json_file = (
@@ -1088,12 +1080,12 @@ def main() -> None:
 
     statistics_json_file = (
         PROCESSED_DIR
-        / f"ndvi_statistics_{SELECTED_SITE_ID}_raw.json"
+        / f"ndmi_statistics_{SELECTED_SITE_ID}_raw.json"
     )
 
     plot_file = (
         OUTPUT_DIR
-        / f"ndvi_timeseries_{SELECTED_SITE_ID}.png"
+        / f"ndmi_timeseries_{SELECTED_SITE_ID}.png"
     )
 
     dataframe.to_csv(
@@ -1158,9 +1150,9 @@ def main() -> None:
 
     display_columns = [
         "acquisition_date",
-        "ndvi_mean",
-        "ndvi_median",
-        "ndvi_std",
+        "ndmi_mean",
+        "ndmi_median",
+        "ndmi_std",
         "valid_pixel_ratio",
         "tile_cloud_cover_mean",
         "is_usable",
