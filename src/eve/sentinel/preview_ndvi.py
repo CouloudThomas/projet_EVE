@@ -7,7 +7,7 @@ import rasterio
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-INPUT_FILE = PROJECT_ROOT / "data" / "output" / "ndvi_test.tif"
+INPUT_FILE = PROJECT_ROOT / "data" / "output" / "site_001_ndvi.tif"
 OUTPUT_FILE = PROJECT_ROOT / "data" / "output" / "ndvi_test.png"
 
 
