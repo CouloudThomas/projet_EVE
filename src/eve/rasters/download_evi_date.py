@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 
 from raster_common import download_index_for_date
 
@@ -49,7 +50,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Télécharge un GeoTIFF EVI pour une date précise."
     )
-    parser.add_argument("--site", default="site_001")
+    parser.add_argument(
+        "--site",
+        default=os.getenv(
+            "EVE_SITE_ID",
+            "site_001",
+        ),
+    )
     parser.add_argument("--date", required=True)
     args = parser.parse_args()
 

@@ -1,13 +1,20 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pandas as pd
+from dotenv import load_dotenv
 
-
-SELECTED_SITE_ID = "site_001"
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+load_dotenv(PROJECT_ROOT / ".env")
+
+SELECTED_SITE_ID = os.getenv(
+    "EVE_SITE_ID",
+    "site_001",
+)
 
 PROCESSED_DIR = (
     PROJECT_ROOT

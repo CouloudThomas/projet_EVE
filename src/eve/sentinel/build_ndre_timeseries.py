@@ -20,18 +20,8 @@ from dotenv import load_dotenv
 # CONFIGURATION : MODIFIE PRINCIPALEMENT CES TROIS VALEURS
 # ==============================================================
 
-SELECTED_SITE_ID = "site_001"
-
-# Dates incluses dans l'analyse.
-START_DATE = "2025-01-01"
-END_DATE = date.today().isoformat()
-
 # Résolution Sentinel-2 en mètres.
 RESOLUTION_METERS = 20
-
-# Seuil minimal de pixels valides pour considérer une date exploitable.
-# C'est un seuil pratique pour la V0, pas une vérité agronomique.
-MIN_VALID_PIXEL_RATIO = 0.30
 
 SAVE_RAW_RESPONSES = False
 
@@ -80,6 +70,28 @@ OUTPUT_DIR = (
 )
 
 load_dotenv(ENV_FILE)
+
+SELECTED_SITE_ID = os.getenv(
+    "EVE_SITE_ID",
+    "site_001",
+)
+
+START_DATE = os.getenv(
+    "EVE_START_DATE",
+    "2025-01-01",
+)
+
+END_DATE = os.getenv(
+    "EVE_END_DATE",
+    date.today().isoformat(),
+)
+
+MIN_VALID_PIXEL_RATIO = float(
+    os.getenv(
+        "EVE_MIN_VALID_PIXEL_RATIO",
+        "0.70",
+    )
+)
 
 
 # ==============================================================

@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import rasterio
+from dotenv import load_dotenv
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
+load_dotenv(PROJECT_ROOT / ".env")
+
 RASTERS_OUTPUT_DIR = PROJECT_ROOT / "data" / "output" / "rasters"
 
 DISPLAY_SETTINGS = {
@@ -148,7 +152,13 @@ def main() -> None:
         required=True,
         choices=["ndvi", "evi", "ndmi", "ndre"],
     )
-    parser.add_argument("--site", default="site_001")
+    parser.add_argument(
+        "--site",
+        default=os.getenv(
+            "EVE_SITE_ID",
+            "site_001",
+        ),
+    )
     parser.add_argument("--date", required=True)
     args = parser.parse_args()
 

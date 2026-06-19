@@ -1,4 +1,0 @@
-site_id,name,min_longitude,min_latitude,max_longitude,max_latitude,crop_type
-site_001,Parcelle abricotiers,4.8360,45.0610,4.8420,45.0660,abricotier
-site_002,Parcelle noyers,4.8720,45.0780,4.8790,45.0840,noyer
-site_003,Parcelle vignes,4.8050,45.0450,4.8110,45.0500,vigne
