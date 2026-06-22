@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "rules_version": "v0.1",
+  "evaluation_mode": "retrospective_loyo",
+  "season_months": [4, 5, 6, 7, 8, 9, 10],
+  "baseline": {
+    "version": "monthly_reference_2016_2025_v0.1",
+    "reference_years": [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
+    "minimum_reference_count": 10,
+    "satellite_method": "same_calendar_month_percentile",
+    "weather_method": "all_daily_same_calendar_month_percentile"
+  },
+  "columns": {
+    "ndmi": "ndmi_buffer_10m_mean",
+    "valid_pixel_ratio": "ndmi_buffer_10m_valid_pixel_ratio",
+    "is_usable": "ndmi_buffer_10m_is_usable",
+    "water_balance": "water_balance_30d",
+    "soil_moisture": "soil_moisture_7_28cm_mean_30d",
+    "vpd": "vpd_max_7d",
+    "precipitation": "precipitation_30d"
+  },
+  "satellite_quality": {
+    "usable_valid_ratio_gte": 0.70,
+    "good_valid_ratio_gte": 0.90
+  },
+  "ndmi": {
+    "low_percentile_lte": 20.0,
+    "very_low_percentile_lte": 10.0
+  },
+  "hydro_context": {
+    "low_percentile_lte": 25.0,
+    "dimensions": ["water_balance_30d", "soil_moisture_7_28cm_mean_30d"]
+  },
+  "vpd": {
+    "high_percentile_gte": 75.0,
+    "very_high_percentile_gte": 90.0
+  },
+  "precipitation": {
+    "low_percentile_lte": 25.0,
+    "decision_vote": false
+  },
+  "persistence": {
+    "lookback_days": 15,
+    "persistent_count_gte": 2,
+    "strong_persistent_count_gte": 3
+  },
+  "episode_grouping": {
+    "maximum_gap_days": 15
+  }
+}

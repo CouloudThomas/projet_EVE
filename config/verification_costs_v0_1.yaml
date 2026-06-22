@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "cost_model_version": "v0_theoretical_001",
+  "cost_status": "theoretical",
+  "actions": {
+    "none": {
+      "time_min_low": 0,
+      "time_min_high": 0,
+      "cost_eur_low": 0,
+      "cost_eur_high": 0,
+      "delay_cost_estimated": false
+    },
+    "wait_next_sentinel": {
+      "time_min_low": 0,
+      "time_min_high": 0,
+      "cost_eur_low": 0,
+      "cost_eur_high": 0,
+      "delay_cost_estimated": false
+    },
+    "review_raster": {
+      "time_min_low": 10,
+      "time_min_high": 20,
+      "cost_eur_low": 0,
+      "cost_eur_high": 5,
+      "delay_cost_estimated": false
+    },
+    "field_check": {
+      "time_min_low": 60,
+      "time_min_high": 90,
+      "cost_eur_low": 20,
+      "cost_eur_high": 50,
+      "delay_cost_estimated": false
+    },
+    "priority_field_check": {
+      "time_min_low": 60,
+      "time_min_high": 120,
+      "cost_eur_low": 20,
+      "cost_eur_high": 70,
+      "delay_cost_estimated": false
+    }
+  },
+  "inactive_actions": {
+    "drone": {
+      "active": false,
+      "reason": "Non activé dans EVE V0.1."
+    }
+  }
+}
