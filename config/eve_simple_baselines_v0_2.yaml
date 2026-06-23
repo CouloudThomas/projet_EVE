@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "version": "eve_simple_baselines_v0_2",
+  "simple_weather_rule": {
+    "hydro_context_in": ["dry", "very_dry"],
+    "vpd_state_in": ["high", "very_high"],
+    "phenology_stage": "summer_stress_window"
+  },
+  "simple_vegetation_rule": {
+    "ndmi_percentile_lte": 10.0
+  },
+  "simple_combined_rule": {
+    "requires_simple_weather_alert": true,
+    "ndmi_percentile_lte": 20.0
+  }
+}

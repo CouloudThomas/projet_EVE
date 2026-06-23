@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0",
+  "cost_model_version": "eve_costs_v0_2",
+  "cost_status": "theoretical",
+  "kgco2e_status": "not_estimated_without_distance_and_emission_factors",
+  "actions": {
+    "none": {
+      "physical_time_min_low": 0,
+      "physical_time_min_high": 0,
+      "physical_travel_km_low": 0,
+      "physical_travel_km_high": 0,
+      "physical_electricity_kwh_low": 0,
+      "physical_electricity_kwh_high": 0,
+      "estimated_kgco2e_low": null,
+      "estimated_kgco2e_high": null,
+      "material_mobilized": "none",
+      "digital_dependency_level": "none",
+      "cost_confidence": "medium"
+    },
+    "wait_next_sentinel": {
+      "physical_time_min_low": 0,
+      "physical_time_min_high": 0,
+      "physical_travel_km_low": 0,
+      "physical_travel_km_high": 0,
+      "physical_electricity_kwh_low": 0,
+      "physical_electricity_kwh_high": 0,
+      "estimated_kgco2e_low": null,
+      "estimated_kgco2e_high": null,
+      "material_mobilized": "none",
+      "digital_dependency_level": "low",
+      "cost_confidence": "medium"
+    },
+    "review_raster": {
+      "physical_time_min_low": 15,
+      "physical_time_min_high": 45,
+      "physical_travel_km_low": 0,
+      "physical_travel_km_high": 0,
+      "physical_electricity_kwh_low": 0.01,
+      "physical_electricity_kwh_high": 0.10,
+      "estimated_kgco2e_low": null,
+      "estimated_kgco2e_high": null,
+      "material_mobilized": "computer",
+      "digital_dependency_level": "medium",
+      "cost_confidence": "low"
+    },
+    "field_check": {
+      "physical_time_min_low": 60,
+      "physical_time_min_high": 120,
+      "physical_travel_km_low": null,
+      "physical_travel_km_high": null,
+      "physical_electricity_kwh_low": 0,
+      "physical_electricity_kwh_high": 0,
+      "estimated_kgco2e_low": null,
+      "estimated_kgco2e_high": null,
+      "material_mobilized": "human_vehicle_optional",
+      "digital_dependency_level": "low",
+      "cost_confidence": "low"
+    },
+    "priority_field_check": {
+      "physical_time_min_low": 60,
+      "physical_time_min_high": 120,
+      "physical_travel_km_low": null,
+      "physical_travel_km_high": null,
+      "physical_electricity_kwh_low": 0,
+      "physical_electricity_kwh_high": 0,
+      "estimated_kgco2e_low": null,
+      "estimated_kgco2e_high": null,
+      "material_mobilized": "human_vehicle_optional",
+      "digital_dependency_level": "low",
+      "cost_confidence": "low"
+    },
+    "drone_flight": {
+      "enabled_in_v0_2": false,
+      "material_mobilized": "drone_batteries_vehicle",
+      "digital_dependency_level": "high"
+    }
+  }
+}

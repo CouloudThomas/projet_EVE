@@ -1,0 +1,96 @@
+{
+  "schema_version": "1.0",
+  "rules_version": "v0.2",
+  "source_rules_version": "v0.1",
+  "phenology": {
+    "crop_type": "noyers",
+    "month_to_stage": {
+      "1": "dormancy_transition",
+      "2": "dormancy_transition",
+      "3": "dormancy_transition",
+      "4": "early_season",
+      "5": "growth",
+      "6": "growth",
+      "7": "summer_stress_window",
+      "8": "summer_stress_window",
+      "9": "summer_stress_window",
+      "10": "late_season",
+      "11": "dormancy_transition",
+      "12": "dormancy_transition"
+    },
+    "interpretation_risk_by_stage": {
+      "early_season": "high",
+      "growth": "medium",
+      "summer_stress_window": "low",
+      "late_season": "high",
+      "dormancy_transition": "high",
+      "unknown": "unknown"
+    }
+  },
+  "scores": {
+    "vegetation_anomaly": {
+      "bands": [
+        {"percentile_lte": 5.0, "score": 1.0},
+        {"percentile_lte": 10.0, "score": 0.85},
+        {"percentile_lte": 20.0, "score": 0.65},
+        {"percentile_lte": 30.0, "score": 0.35}
+      ],
+      "default_score": 0.0
+    },
+    "climatic_pressure": {
+      "hydro_scores": {
+        "normal": 0.15,
+        "dry": 0.60,
+        "very_dry": 0.85
+      },
+      "vpd_bonus": {
+        "normal": 0.0,
+        "high": 0.15,
+        "very_high": 0.25,
+        "unknown": 0.0
+      }
+    },
+    "quality_risk": {
+      "satellite_quality_scores": {
+        "good": 0.0,
+        "usable": 0.35,
+        "poor": 1.0,
+        "unknown": 0.8
+      }
+    },
+    "consistency_method": "min"
+  },
+  "degraded_mode": {
+    "fresh_days_lte": 5,
+    "stale_days_lte": 12,
+    "obsolete_days_gt": 12,
+    "high_climatic_pressure_gte": 0.70,
+    "low_visible_response_lt": 0.30
+  },
+  "typology": {
+    "vegetation_anomaly_gte": 0.60,
+    "strong_vegetation_anomaly_gte": 0.70,
+    "climatic_pressure_gte": 0.60,
+    "weak_climatic_pressure_lt": 0.40,
+    "quality_risk_gte": 0.70,
+    "vpd_pressure_states": ["high", "very_high"],
+    "transition_stages": ["early_season", "late_season", "dormancy_transition"],
+    "priority": [
+      "quality_or_artifact_suspect",
+      "hydroclimatic_candidate",
+      "atmospheric_demand_candidate",
+      "phenology_transition",
+      "unexplained_vegetation_anomaly",
+      "management_effect_possible",
+      "weak_or_unclear_signal"
+    ]
+  },
+  "manual_audit": {
+    "duration_days_gte": 30,
+    "lowest_ndmi_percentile_lte": 5.0,
+    "include_episode_types": [
+      "quality_or_artifact_suspect",
+      "unexplained_vegetation_anomaly"
+    ]
+  }
+}

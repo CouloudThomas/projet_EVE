@@ -19,11 +19,13 @@ __pycache__/
 .ruff_cache/
 
 .ipynb_checkpoints/
+notebooks/archive/
 
 # Sorties lourdes ou temporaires
 data/output/
 data/raw/
 data/interim/
+data/processed/archive/
 data/processed/*_raw.json
 *.tif
 *.tiff
