@@ -1,10 +1,36 @@
+# Secrets locaux : ne jamais versionner
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+
+# Environnements locaux
 .venv/
+venv/
+env/
 
 __pycache__/
 *.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 .ipynb_checkpoints/
 
+# Sorties lourdes ou temporaires
 data/output/
+data/raw/
+data/interim/
 data/processed/*_raw.json
+*.tif
+*.tiff
+*.jp2
+
+# OS / éditeurs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

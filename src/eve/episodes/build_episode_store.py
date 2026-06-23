@@ -22,6 +22,10 @@ from eve.episodes.grouping import (
     assign_episode_ids,
     build_episode_table,
 )
+from eve.episodes.monitoring import (
+    build_monitoring_report,
+    write_monitoring_artifacts,
+)
 from eve.episodes.rules import (
     build_justification_codes,
     build_justification_text,
@@ -42,6 +46,17 @@ DEFAULT_RULES_CONFIG = PROJECT_ROOT / "config" / "episode_rules_v0_1.yaml"
 DEFAULT_COSTS_CONFIG = (
     PROJECT_ROOT / "config" / "verification_costs_v0_1.yaml"
 )
+
+ACTION_EXPORTS = {
+    "review_raster": "eve_episodes_review_raster_{site_id}.csv",
+    "field_check": "eve_episodes_field_check_{site_id}.csv",
+    "priority_field_check": "eve_episodes_priority_field_check_{site_id}.csv",
+}
+
+AUDIT_SHORTLIST_FILE = "eve_episodes_audit_shortlist_{site_id}.csv"
+INFORMATION_QUEUE_FILE = "eve_episodes_information_queue_{site_id}.csv"
+AUDIT_LONG_DURATION_DAYS = 30
+AUDIT_EXTREME_NDMI_PERCENTILE = 5.0
 
 
 DECISION_POINT_COLUMNS = [
@@ -118,6 +133,101 @@ DECISION_POINT_COLUMNS = [
     "human_final_decision",
     "episode_id",
 ]
+
+
+def _sort_episode_queue(episodes: pd.DataFrame) -> pd.DataFrame:
+    """Trie les épisodes dans un ordre utile pour l'audit humain."""
+
+    if episodes.empty:
+        return episodes.copy()
+
+    action_order = {
+        "priority_field_check": 1,
+        "field_check": 2,
+        "review_raster": 3,
+    }
+    urgency_order = {"high": 1, "medium": 2, "low": 3, "none": 4}
+    result = episodes.copy()
+    result["_action_order"] = result["proposed_action"].map(
+        action_order
+    ).fillna(99)
+    result["_urgency_order"] = result["maximum_urgency"].map(
+        urgency_order
+    ).fillna(99)
+    sort_columns = [
+        "_action_order",
+        "_urgency_order",
+        "lowest_ndmi_percentile",
+        "duration_days",
+        "episode_start_date",
+    ]
+    ascending = [True, True, True, False, True]
+    result = result.sort_values(sort_columns, ascending=ascending)
+    return result.drop(columns=["_action_order", "_urgency_order"])
+
+
+def _audit_reasons(row: pd.Series) -> str:
+    reasons: list[str] = []
+    if row["proposed_action"] == "priority_field_check":
+        reasons.append("priority_field_check")
+    if row["proposed_action"] == "field_check":
+        reasons.append("field_check")
+    if int(row["duration_days"]) >= AUDIT_LONG_DURATION_DAYS:
+        reasons.append(f"duration_gte_{AUDIT_LONG_DURATION_DAYS}d")
+    if float(row["lowest_ndmi_percentile"]) <= AUDIT_EXTREME_NDMI_PERCENTILE:
+        reasons.append(f"lowest_ndmi_percentile_lte_{AUDIT_EXTREME_NDMI_PERCENTILE:g}")
+    return "|".join(reasons)
+
+
+def build_episode_export_tables(
+    episodes: pd.DataFrame,
+) -> dict[str, pd.DataFrame]:
+    """Construit les files d'audit opérationnel à partir des épisodes.
+
+    Les exports séparent les actions pour éviter qu'un épisode terrain non
+    prioritaire disparaisse d'une short-list raster. La short-list d'audit
+    inclut explicitement les épisodes priority_field_check, field_check,
+    les épisodes longs et les épisodes NDMI très extrêmes.
+    """
+
+    if episodes.empty:
+        return {
+            "information_queue": episodes.copy(),
+            "audit_shortlist": episodes.copy(),
+            "review_raster": episodes.copy(),
+            "field_check": episodes.copy(),
+            "priority_field_check": episodes.copy(),
+        }
+
+    queue = episodes[
+        episodes["proposed_action"].isin(ACTION_EXPORTS.keys())
+    ].copy()
+    queue = _sort_episode_queue(queue)
+
+    audit_mask = (
+        queue["proposed_action"].isin(
+            ["priority_field_check", "field_check"]
+        )
+        | (queue["duration_days"] >= AUDIT_LONG_DURATION_DAYS)
+        | (queue["lowest_ndmi_percentile"] <= AUDIT_EXTREME_NDMI_PERCENTILE)
+    )
+    audit_shortlist = queue[audit_mask].copy()
+    if not audit_shortlist.empty:
+        audit_shortlist.insert(
+            0,
+            "audit_selection_reasons",
+            audit_shortlist.apply(_audit_reasons, axis=1),
+        )
+
+    exports = {
+        "information_queue": queue,
+        "audit_shortlist": audit_shortlist,
+    }
+    for action in ACTION_EXPORTS:
+        exports[action] = _sort_episode_queue(
+            episodes[episodes["proposed_action"].eq(action)].copy()
+        )
+    return exports
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -517,6 +627,33 @@ def build_decision_points(
     return decision_points, baseline_artifact
 
 
+def write_episode_exports(
+    episodes: pd.DataFrame,
+    *,
+    output_dir: Path,
+    site_id: str,
+) -> dict[str, Path]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    tables = build_episode_export_tables(episodes)
+    output_files = {
+        "information_queue": output_dir
+        / INFORMATION_QUEUE_FILE.format(site_id=site_id),
+        "audit_shortlist": output_dir
+        / AUDIT_SHORTLIST_FILE.format(site_id=site_id),
+    }
+    output_files.update(
+        {
+            action: output_dir / filename.format(site_id=site_id)
+            for action, filename in ACTION_EXPORTS.items()
+        }
+    )
+
+    for name, table in tables.items():
+        table.to_csv(output_files[name], index=False, encoding="utf-8")
+
+    return output_files
+
+
 def write_artifacts(
     decision_points: pd.DataFrame,
     episodes: pd.DataFrame,
@@ -539,6 +676,7 @@ def write_artifacts(
     with baseline_file.open("w", encoding="utf-8") as file:
         json.dump(baseline_artifact, file, ensure_ascii=False, indent=2)
         file.write("\n")
+    write_episode_exports(episodes, output_dir=output_dir, site_id=site_id)
 
     return decision_file, episode_file, baseline_file
 
@@ -581,6 +719,17 @@ def run(
         decision_points,
         episodes,
         baseline_artifact,
+        output_dir=processed_dir,
+        site_id=site_id,
+    )
+    monitoring_report = build_monitoring_report(
+        decision_points,
+        episodes,
+        site_id=site_id,
+        generated_at=generated_at,
+    )
+    write_monitoring_artifacts(
+        monitoring_report,
         output_dir=processed_dir,
         site_id=site_id,
     )
