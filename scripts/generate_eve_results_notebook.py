@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -9,7 +10,7 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 NOTEBOOK_PATH = PROJECT_ROOT / "notebooks" / "explore_eve_results.ipynb"
 DATA_DIR = PROJECT_ROOT / "data" / "processed"
-SITE_ID = "site_004"
+DEFAULT_SITE_ID = "site_004"
 
 
 def md(source: str) -> dict:
@@ -30,29 +31,66 @@ def code(source: str) -> dict:
     }
 
 
-def main() -> None:
-    decision_points = pd.read_csv(DATA_DIR / f"eve_decision_points_{SITE_ID}.csv")
-    episodes = pd.read_csv(DATA_DIR / f"eve_episodes_{SITE_ID}.csv")
-    manual_audit = pd.read_csv(DATA_DIR / f"eve_manual_audit_{SITE_ID}.csv")
+def parse_arguments() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Génère le notebook principal d'analyse des résultats EVE V0.2."
+    )
+    parser.add_argument(
+        "--site",
+        default=DEFAULT_SITE_ID,
+        help="Identifiant du site à analyser dans le notebook.",
+    )
+    return parser.parse_args()
+
+
+def main(site_id: str | None = None) -> None:
+    if site_id is None:
+        site_id = parse_arguments().site
+
+    decision_points = pd.read_csv(DATA_DIR / f"eve_decision_points_{site_id}.csv")
+    episodes = pd.read_csv(DATA_DIR / f"eve_episodes_{site_id}.csv")
+    manual_audit = pd.read_csv(DATA_DIR / f"eve_manual_audit_{site_id}.csv")
     summary = json.loads(
-        (DATA_DIR / f"eve_summary_{SITE_ID}.json").read_text(encoding="utf-8")
+        (DATA_DIR / f"eve_summary_{site_id}.json").read_text(encoding="utf-8")
     )
     type_distribution = episodes["episode_type_primary"].value_counts().to_dict()
+
+    config_cell = """
+from pathlib import Path
+import json
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+PROJECT_ROOT = Path("..").resolve()
+DATA_DIR = PROJECT_ROOT / "data" / "processed"
+SITE_ID = "__SITE_ID__"
+
+paths = {
+    "decision_points": DATA_DIR / f"eve_decision_points_{SITE_ID}.csv",
+    "episodes": DATA_DIR / f"eve_episodes_{SITE_ID}.csv",
+    "summary": DATA_DIR / f"eve_summary_{SITE_ID}.json",
+    "manual_audit": DATA_DIR / f"eve_manual_audit_{SITE_ID}.csv",
+}
+
+for name, path in paths.items():
+    print(name, path, "OK" if path.exists() else "MISSING")
+""".replace("__SITE_ID__", site_id)
 
     notebook = {
         "cells": [
             md(
                 f"""
-# EVE — résultats officiels V0.2 — {SITE_ID}
+# EVE — résultats officiels V0.2 — {site_id}
 
 Ce notebook est le notebook principal simplifié du projet.
 
 Il lit uniquement les 4 sorties officielles :
 
-- `eve_decision_points_{SITE_ID}.csv`
-- `eve_episodes_{SITE_ID}.csv`
-- `eve_summary_{SITE_ID}.json`
-- `eve_manual_audit_{SITE_ID}.csv`
+- `eve_decision_points_{site_id}.csv`
+- `eve_episodes_{site_id}.csv`
+- `eve_summary_{site_id}.json`
+- `eve_manual_audit_{site_id}.csv`
 
 La V0.1 est désormais une étape interne du pipeline ; la sortie officielle analysée ici est la V0.2.
 """
@@ -68,29 +106,7 @@ La V0.1 est désormais une étape interne du pipeline ; la sortie officielle ana
 - Version officielle : {summary.get("eve_pipeline_version")}
 """
             ),
-            code(
-                """
-from pathlib import Path
-import json
-
-import matplotlib.pyplot as plt
-import pandas as pd
-
-PROJECT_ROOT = Path("..").resolve()
-DATA_DIR = PROJECT_ROOT / "data" / "processed"
-SITE_ID = "site_004"
-
-paths = {
-    "decision_points": DATA_DIR / f"eve_decision_points_{SITE_ID}.csv",
-    "episodes": DATA_DIR / f"eve_episodes_{SITE_ID}.csv",
-    "summary": DATA_DIR / f"eve_summary_{SITE_ID}.json",
-    "manual_audit": DATA_DIR / f"eve_manual_audit_{SITE_ID}.csv",
-}
-
-for name, path in paths.items():
-    print(name, path, "OK" if path.exists() else "MISSING")
-"""
-            ),
+            code(config_cell),
             code(
                 """
 decision_points = pd.read_csv(paths["decision_points"], parse_dates=["acquisition_date"])
@@ -298,7 +314,8 @@ def show_episode(episode_id: str):
         ]
     )
 
-show_episode(episodes.iloc[0]["episode_id"])
+if not episodes.empty:
+    show_episode(episodes.iloc[0]["episode_id"])
 """
             ),
             md(
@@ -330,6 +347,8 @@ Interprétation prudente :
         "nbformat": 4,
         "nbformat_minor": 5,
     }
+
+    NOTEBOOK_PATH.parent.mkdir(parents=True, exist_ok=True)
     NOTEBOOK_PATH.write_text(
         json.dumps(notebook, ensure_ascii=False, indent=1),
         encoding="utf-8",

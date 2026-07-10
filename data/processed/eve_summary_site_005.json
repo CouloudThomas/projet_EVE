@@ -1,0 +1,47 @@
+{
+  "site_id": "site_005",
+  "version": "eve_v0_2",
+  "generated_at": "2026-06-23T19:54:21+00:00",
+  "eligible_points": 471,
+  "candidate_dates": 106,
+  "episodes": 31,
+  "manual_audit_episodes": 26,
+  "poor_quality_abstentions": 408,
+  "wait_decisions": 365,
+  "manual_review_candidates": 31,
+  "priority_candidates": 9,
+  "offline_decision_possible_count": 888,
+  "digital_dependency_distribution": {
+    "low": 16,
+    "medium": 15
+  },
+  "episode_type_distribution": {
+    "hydroclimatic_candidate": 18,
+    "phenology_transition": 6,
+    "weak_or_unclear_signal": 4,
+    "unexplained_vegetation_anomaly": 3
+  },
+  "simple_baseline_relation_distribution": {
+    "eve_only": 26,
+    "both_alert": 5
+  },
+  "potential_observations_avoided_vs_all_eligible_review_proxy": 445,
+  "interventions_avoided_real": null,
+  "water_saved_real": null,
+  "yield_preserved_real": null,
+  "drone_flights_avoided_real": null,
+  "co2e_saved_real": null,
+  "note": "Robustness metrics are proxies unless externally validated. The avoided-observation metric compares eligible Sentinel decision points to a manual-audit episode shortlist and is not a measured gain.",
+  "eve_pipeline_version": "v0.2_official",
+  "evaluation_mode": "retrospective_loyo",
+  "source_decision_rules_version": "v0.1",
+  "robustness_rules_version": "v0.2",
+  "baseline_version": "monthly_reference_2016_2025_v0.1_site_005_retrospective_loyo",
+  "official_outputs": {
+    "decision_points": "data\\processed\\eve_decision_points_site_005.csv",
+    "episodes": "data\\processed\\eve_episodes_site_005.csv",
+    "summary": "data\\processed\\eve_summary_site_005.json",
+    "manual_audit": "data\\processed\\eve_manual_audit_site_005.csv"
+  },
+  "interpretation_warning": "Les épisodes V0.2 sont des hypothèses d'observation et de qualification, pas des diagnostics causalement validés."
+}
